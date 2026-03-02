@@ -1,0 +1,557 @@
+@ ==============================================================@
+@ OxGauss program for SURARDL		        @ 
+@ ============================================================= @
+@ Input:      		y: Tx1 vector of time series        	@
+@ Output:    		SUR_ARDL distribution	@
+@ Subprogram: 		none					@
+@ Lag length:		1					@
+@ ==============================================================@
+
+closeall;
+
+output file=surardl_distribution_out(c).txt reset;
+
+@ =====data generating process (DGP)===================@
+nr=5000;
+
+rhom11={1,1};
+rhom12={1,1};
+rhom13={1,1};
+rhom14={1,1};
+rhom15={1,1};
+rhom21={1,0};
+rhom22={1,0};
+rhom23={1,0};
+rhom24={1,0};
+rhom25={1,0};			 
+
+@ thetam={0,1,0.95,0.90}; @
+@nnm={30,50,80,100,150,200};@
+nnm={50};   
+sbm={0.125,0.375,0.625,0.875};
+
+rr=1;
+do while rr<=rows(rhom11);
+rho11=rhom11[rr];
+rho12=rhom12[rr];
+rho13=rhom13[rr];
+rho14=rhom14[rr];
+rho15=rhom15[rr];
+rho21=rhom21[rr];
+rho22=rhom22[rr];
+rho23=rhom23[rr];
+rho24=rhom24[rr];
+rho25=rhom25[rr];
+
+nn1=1;
+do while nn1<=rows(nnm);
+nn=nnm[nn1]; 
+
+"Number of observation+++" nn;
+
+ns=5;
+@ ns is number of countries@
+mout1=zeros(ns,7);
+ardl1=zeros(nr,1);
+ardl2=zeros(nr,1);
+ardl3=zeros(nr,1);
+ardl4=zeros(nr,1);
+ardl5=zeros(nr,1);
+
+i=1;
+do while i <=nr;
+
+e=zeros(nn,1);
+y=zeros(nn,1);
+e11=rndn(nn,1); 
+e12=rndn(nn,1); 
+e21=rndn(nn,1); 
+e22=rndn(nn,1); 
+e31=rndn(nn,1); 
+e32=rndn(nn,1); 
+e41=rndn(nn,1); 
+e42=rndn(nn,1); 
+e51=rndn(nn,1); 
+e52=rndn(nn,1); 
+
+y000=zeros(nn,1);
+y001=zeros(nn,1);
+y002=zeros(nn,1);
+trend0=seqa(1,1,nn);
+const0=ones(nn,1);
+
+@ =====SUR-ARDL : data preparation for unrestriced model ================================================	@
+@ rrr=(rr-2);
+lose of two observation@
+rrr=(nn-1);
+
+tnc=5;
+@ tnc is total number of countries @
+tnv1=5;
+@ tnv1 is total number of variable in unrestrice model @
+tnv2=2;
+@ tnv2 is total number of variable in restrice model @
+
+yy=zeros(tnc*rrr, 1);
+xx1=zeros(tnc*rrr,tnc*tnv1);
+xx2=zeros(tnc*rrr,tnc*tnv2);
+
+j=1;
+do while j<=rrr;
+
+rr1_1=zeros(nn,1);
+rr1_2=zeros(nn,1);
+rr2_1=zeros(nn,1);
+rr2_2=zeros(nn,1);
+rr3_1=zeros(nn,1);
+rr3_2=zeros(nn,1);
+rr4_1=zeros(nn,1);
+rr4_2=zeros(nn,1);
+rr5_1=zeros(nn,1);
+rr5_2=zeros(nn,1);
+
+mc=1;
+do while mc<=nn;
+    if mc==1;
+    rr1_1[mc,1]=0;
+    rr1_2[mc,1]=0;
+    rr2_1[mc,1]=0;
+    rr2_2[mc,1]=0;
+    rr3_1[mc,1]=0;
+    rr3_2[mc,1]=0;
+    rr4_1[mc,1]=0;
+    rr4_2[mc,1]=0;
+    rr5_1[mc,1]=0;
+    rr5_2[mc,1]=0;
+    else;        
+    rr1_1[mc,1]=rho11*rr1_1[mc-1]+e11[mc];
+    rr1_2[mc,1]=rho21*rr1_2[mc-1]+e12[mc];
+    rr2_1[mc,1]=rho12*rr2_1[mc-1]+e21[mc];
+    rr2_2[mc,1]=rho22*rr2_2[mc-1]+e22[mc];
+    rr3_1[mc,1]=rho13*rr3_1[mc-1]+e31[mc];
+    rr3_2[mc,1]=rho23*rr3_2[mc-1]+e22[mc];
+    rr4_1[mc,1]=rho14*rr4_1[mc-1]+e41[mc];
+    rr4_2[mc,1]=rho24*rr4_2[mc-1]+e42[mc];
+    rr5_1[mc,1]=rho15*rr5_1[mc-1]+e51[mc];
+    rr5_2[mc,1]=rho25*rr5_2[mc-1]+e52[mc];
+    endif;
+mc=mc+1;
+endo;
+
+@ country 1@
+y0=rr1_1;
+x1=rr1_2;
+
+k=1;
+n=rows(y0);
+dy1=y0[2:n]-y0[1:n-1];
+dx1=x1[2:n]-x1[1:n-1];
+const=ones(n,1);
+trend=seqa(1,1,n);
+xu1=dx1[k:n-1]~const[k+1:n]~trend[k+1:n]~y0[k:n-1]~x1[k:n-1];
+xr1=dx1[k:n-1]~const[k+1:n];
+y1=dy1[k:n-1];
+ny1=rows(y1);
+
+@ country 2@
+y0=rr2_1;
+x1=rr2_2;
+
+k=1;
+n=rows(y0);
+dy1=y0[2:n]-y0[1:n-1];
+dx1=x1[2:n]-x1[1:n-1];
+const=ones(n,1);
+trend=seqa(1,1,n);
+xu2=dx1[k:n-1]~const[k+1:n]~trend[k+1:n]~y0[k:n-1]~x1[k:n-1];
+xr2=dx1[k:n-1]~const[k+1:n];
+y2=dy1[k:n-1];
+ny2=rows(y2);
+
+@ country 3@
+y0=rr3_1;
+x1=rr3_2;
+
+k=1;
+n=rows(y0);
+dy1=y0[2:n]-y0[1:n-1];
+dx1=x1[2:n]-x1[1:n-1];
+const=ones(n,1);
+trend=seqa(1,1,n);
+xu3=dx1[k:n-1]~const[k+1:n]~trend[k+1:n]~y0[k:n-1]~x1[k:n-1];
+xr3=dx1[k:n-1]~const[k+1:n];
+y3=dy1[k:n-1];
+ny3=rows(y3);
+
+@ country 4@
+y0=rr4_1;
+x1=rr4_2;
+
+k=1;
+n=rows(y0);
+dy1=y0[2:n]-y0[1:n-1];
+dx1=x1[2:n]-x1[1:n-1];
+const=ones(n,1);
+trend=seqa(1,1,n);
+xu4=dx1[k:n-1]~const[k+1:n]~trend[k+1:n]~y0[k:n-1]~x1[k:n-1];
+xr4=dx1[k:n-1]~const[k+1:n];
+y4=dy1[k:n-1];
+ny4=rows(y4);
+
+@ country 5@
+y0=rr5_1;
+x1=rr5_2;
+
+k=1;
+n=rows(y0);
+dy1=y0[2:n]-y0[1:n-1];
+dx1=x1[2:n]-x1[1:n-1];
+const=ones(n,1);
+trend=seqa(1,1,n);
+xu5=dx1[k:n-1]~const[k+1:n]~trend[k+1:n]~y0[k:n-1]~x1[k:n-1];
+xr5=dx1[k:n-1]~const[k+1:n];
+y5=dy1[k:n-1];
+ny5=rows(y5);
+
+nc=1;
+do while nc<=tnc;
+
+if nc==1;
+y=y1;
+xu=xu1;
+xr=xr1;
+endif;
+    
+if nc==2;
+y=y2;
+xu=xu2;
+xr=xr2;
+endif;
+
+if nc==3;
+y=y3;
+xu=xu3;
+xr=xr3;
+endif;
+
+if nc==4;
+y=y4;
+xu=xu4;
+xr=xr4;
+endif;
+
+if nc==5;
+y=y5;
+xu=xu5;
+xr=xr5;
+endif;
+
+yy[j+rrr*(nc-1)]=y[j];
+xx1[j+rrr*(nc-1),1+5*(nc-1)]=xu[j,1];
+xx1[j+rrr*(nc-1),2+5*(nc-1)]=xu[j,2];
+xx1[j+rrr*(nc-1),3+5*(nc-1)]=xu[j,3];
+xx1[j+rrr*(nc-1),4+5*(nc-1)]=xu[j,4];
+xx1[j+rrr*(nc-1),5+5*(nc-1)]=xu[j,5];
+xx2[j+rrr*(nc-1),1+2*(nc-1)]=xr[j,1];
+xx2[j+rrr*(nc-1),2+2*(nc-1)]=xr[j,2];
+nc=nc+1;
+endo;
+
+j=j+1;
+endo;
+
+@ =====SUR_ARDL model (unrestricted model) ==========	@
+ncc=tnc;
+cc=nc;
+
+eee2=zeros(rrr*ncc,ncc);
+eee5=zeros(rrr,ncc);
+eee3=zeros(rrr*cc,1);
+eee3_1=zeros(rrr,1);
+eee3_2=zeros(rrr,1);
+eee3_3=zeros(rrr,1);
+eee3_4=zeros(rrr,1);
+eee3_5=zeros(rrr,1);
+beta3_1=zeros(5,1);
+beta3_2=zeros(5,1);
+beta3_3=zeros(5,1);
+beta3_4=zeros(5,1);
+beta3_5=zeros(5,1);
+sd3_1=zeros(5,1);
+sd3_2=zeros(5,1);
+sd3_3=zeros(5,1);
+sd3_4=zeros(5,1);
+sd3_5=zeros(5,1);
+
+invxx1=inv(xx1'xx1);
+beta3=invxx1*xx1'yy;
+eee3=yy-xx1*beta3;
+
+eee2[1:rrr,1]=eee3[1:rrr];
+eee2[1:rrr,2]=eee3[rrr+1:rrr*2];
+eee2[1:rrr,3]=eee3[rrr*2+1:rrr*3];
+eee2[1:rrr,4]=eee3[rrr*3+1:rrr*4];
+eee2[1:rrr,5]=eee3[rrr*4+1:rrr*5];
+
+rss5=eee2'eee2/(rrr);
+ccc=rss5.*.eye(rrr);
+ccc=inv(ccc);
+beta6=inv(xx1'ccc*xx1)*(xx1'ccc*yy);
+eee6=yy-xx1*beta6;
+invxxc=inv(xx1'ccc*xx1);
+
+beta3_1[1:5]=beta6[1:5];
+beta3_2[1:5]=beta6[5:10];
+beta3_3[1:5]=beta6[11:15];
+beta3_4[1:5]=beta6[16:20];
+beta3_5[1:5]=beta6[21:25];
+
+eee3_1[1:rrr]=eee6[1:rrr];
+eee3_2[1:rrr]=eee6[rrr+1:rrr*2];
+eee3_3[1:rrr]=eee6[rrr*2+1:rrr*3];
+eee3_4[1:rrr]=eee6[rrr*3+1:rrr*4];
+eee3_5[1:rrr]=eee6[rrr*4+1:rrr*5];
+
+ee1_1=(eee3_1'eee3_1);
+ee1_2=(eee3_2'eee3_2);
+ee1_3=(eee3_3'eee3_3);
+ee1_4=(eee3_4'eee3_4);
+ee1_5=(eee3_5'eee3_5);
+
+@ =====SUR-ARDL : data preparation for restriced model ================================================	@
+ncc=tnc;
+eee2=zeros(rrr*ncc,ncc);
+eee5=zeros(rrr,ncc);
+eee3=zeros(rrr*cc,1);
+eee3_1=zeros(rrr,1);
+eee3_2=zeros(rrr,1);
+eee3_3=zeros(rrr,1);
+eee3_4=zeros(rrr,1);
+eee3_5=zeros(rrr,1);
+beta3_1=zeros(2,1);
+beta3_2=zeros(2,1);
+beta3_3=zeros(2,1);
+beta3_4=zeros(2,1);
+beta3_5=zeros(2,1);
+sd3_1=zeros(2,1);
+sd3_2=zeros(2,1);
+sd3_3=zeros(2,1);
+sd3_4=zeros(2,1);
+sd3_5=zeros(2,1);
+
+invxx2=inv(xx2'xx2);
+beta3=invxx2*xx2'yy;
+eee3=yy-xx2*beta3;
+
+eee2[1:rrr,1]=eee3[1:rrr];
+eee2[1:rrr,2]=eee3[rrr+1:rrr*2];
+eee2[1:rrr,3]=eee3[rrr*2+1:rrr*3];
+eee2[1:rrr,4]=eee3[rrr*3+1:rrr*4];
+eee2[1:rrr,5]=eee3[rrr*4+1:rrr*5];
+
+rss5=eee2'eee2/(rrr);
+ccc=rss5.*.eye(rrr);
+ccc=inv(ccc);
+beta6=inv(xx2'ccc*xx2)*(xx2'ccc*yy);
+eee6=yy-xx2*beta6;
+invxxc=inv(xx2'ccc*xx2);
+
+beta3_1[1:2]=beta6[1:2];
+beta3_2[1:2]=beta6[3:4];
+beta3_3[1:2]=beta6[5:6];
+beta3_4[1:2]=beta6[7:8];
+beta3_5[1:2]=beta6[9:10];
+
+eee3_1[1:rrr]=eee6[1:rrr];
+eee3_2[1:rrr]=eee6[rrr+1:rrr*2];
+eee3_3[1:rrr]=eee6[rrr*2+1:rrr*3];
+eee3_4[1:rrr]=eee6[rrr*3+1:rrr*4];
+eee3_5[1:rrr]=eee6[rrr*4+1:rrr*5];
+
+ee2_1=(eee3_1'eee3_1);
+ee2_2=(eee3_2'eee3_2);
+ee2_3=(eee3_3'eee3_3);
+ee2_4=(eee3_4'eee3_4);
+ee2_5=(eee3_5'eee3_5);
+
+nc1=tnv1;
+nc2=tnv2;
+
+f_num=(ee2_1-ee1_1)/(nc1-nc2);
+f_den=ee1_1/(ny1-nc1);
+ff1=f_num/f_den;
+ardl1[i,1]=ff1;
+
+f_num=(ee2_2-ee1_2)/(nc1-nc2);
+f_den=ee1_2/(ny1-nc1);
+ff2=f_num/f_den;
+ardl2[i,1]=ff2;
+
+f_num=(ee2_3-ee1_3)/(nc1-nc2);
+f_den=ee1_3/(ny1-nc1);
+ff3=f_num/f_den;
+ardl3[i,1]=ff3;
+
+f_num=(ee2_4-ee1_4)/(nc1-nc2);
+f_den=ee1_4/(ny1-nc1);
+ff4=f_num/f_den;
+ardl4[i,1]=ff4;
+
+f_num=(ee2_5-ee1_5)/(nc1-nc2);
+f_den=ee1_5/(ny1-nc1);
+ff5=f_num/f_den;
+ardl5[i,1]=ff5;
+
+if i==1000;
+"np=" 1000;
+endif;
+if i==2000;
+"np=" 2000;
+endif;
+if i==3000;
+"np=" 3000;
+endif;
+if i==4000;
+"np=" 4000;
+endif;
+if i==5000;
+"np=" 5000;
+endif;
+
+i=i+1;
+endo;
+
+s_adfm=sortc(ardl1,1);
+cv_adfm_1=s_adfm[int(0.01*nr)];
+cv_adfm_5=s_adfm[int(0.05*nr)];
+cv_adfm_10=s_adfm[int(0.10*nr)];
+cv_adfm_50=s_adfm[int(0.50*nr)];
+cv_adfm_90=s_adfm[int(0.90*nr)];
+cv_adfm_95=s_adfm[int(0.95*nr)];
+cv_adfm_99=s_adfm[int(0.99*nr)];
+
+"cv_ardlm_1=" cv_adfm_1;
+"cv_ardlm_5=" cv_adfm_5;
+"cv_ardlm_10=" cv_adfm_10;
+"cv_ardlm_50=" cv_adfm_50;
+"cv_ardlm_90=" cv_adfm_90;
+"cv_ardlm_95=" cv_adfm_95;
+"cv_ardlm_99=" cv_adfm_99;
+
+mout1[1,1]=cv_adfm_1;
+mout1[1,2]=cv_adfm_5;
+mout1[1,3]=cv_adfm_10;
+mout1[1,4]=cv_adfm_50;
+mout1[1,5]=cv_adfm_90;
+mout1[1,6]=cv_adfm_95;
+mout1[1,7]=cv_adfm_99;
+
+s_adfm=sortc(ardl2,1);
+cv_adfm_1=s_adfm[int(0.01*nr)];
+cv_adfm_5=s_adfm[int(0.05*nr)];
+cv_adfm_10=s_adfm[int(0.10*nr)];
+cv_adfm_50=s_adfm[int(0.50*nr)];
+cv_adfm_90=s_adfm[int(0.90*nr)];
+cv_adfm_95=s_adfm[int(0.95*nr)];
+cv_adfm_99=s_adfm[int(0.99*nr)];
+
+"cv_ardlm_1=" cv_adfm_1;
+"cv_ardlm_5=" cv_adfm_5;
+"cv_ardlm_10=" cv_adfm_10;
+"cv_ardlm_50=" cv_adfm_50;
+"cv_ardlm_90=" cv_adfm_90;
+"cv_ardlm_95=" cv_adfm_95;
+"cv_ardlm_99=" cv_adfm_99;
+
+mout1[2,1]=cv_adfm_1;
+mout1[2,2]=cv_adfm_5;
+mout1[2,3]=cv_adfm_10;
+mout1[2,4]=cv_adfm_50;
+mout1[2,5]=cv_adfm_90;
+mout1[2,6]=cv_adfm_95;
+mout1[2,7]=cv_adfm_99;
+
+s_adfm=sortc(ardl3,1);
+cv_adfm_1=s_adfm[int(0.01*nr)];
+cv_adfm_5=s_adfm[int(0.05*nr)];
+cv_adfm_10=s_adfm[int(0.10*nr)];
+cv_adfm_50=s_adfm[int(0.50*nr)];
+cv_adfm_90=s_adfm[int(0.90*nr)];
+cv_adfm_95=s_adfm[int(0.95*nr)];
+cv_adfm_99=s_adfm[int(0.99*nr)];
+
+"cv_ardlm_1=" cv_adfm_1;
+"cv_ardlm_5=" cv_adfm_5;
+"cv_ardlm_10=" cv_adfm_10;
+"cv_ardlm_50=" cv_adfm_50;
+"cv_ardlm_90=" cv_adfm_90;
+"cv_ardlm_95=" cv_adfm_95;
+"cv_ardlm_99=" cv_adfm_99;
+
+mout1[3,1]=cv_adfm_1;
+mout1[3,2]=cv_adfm_5;
+mout1[3,3]=cv_adfm_10;
+mout1[3,4]=cv_adfm_50;
+mout1[3,5]=cv_adfm_90;
+mout1[3,6]=cv_adfm_95;
+mout1[3,7]=cv_adfm_99;
+
+s_adfm=sortc(ardl4,1);
+cv_adfm_1=s_adfm[int(0.01*nr)];
+cv_adfm_5=s_adfm[int(0.05*nr)];
+cv_adfm_10=s_adfm[int(0.10*nr)];
+cv_adfm_50=s_adfm[int(0.50*nr)];
+cv_adfm_90=s_adfm[int(0.90*nr)];
+cv_adfm_95=s_adfm[int(0.95*nr)];
+cv_adfm_99=s_adfm[int(0.99*nr)];
+
+"cv_ardlm_1=" cv_adfm_1;
+"cv_ardlm_5=" cv_adfm_5;
+"cv_ardlm_10=" cv_adfm_10;
+"cv_ardlm_50=" cv_adfm_50;
+"cv_ardlm_90=" cv_adfm_90;
+"cv_ardlm_95=" cv_adfm_95;
+"cv_ardlm_99=" cv_adfm_99;
+
+mout1[4,1]=cv_adfm_1;
+mout1[4,2]=cv_adfm_5;
+mout1[4,3]=cv_adfm_10;
+mout1[4,4]=cv_adfm_50;
+mout1[4,5]=cv_adfm_90;
+mout1[4,6]=cv_adfm_95;
+mout1[4,7]=cv_adfm_99;
+
+s_adfm=sortc(ardl5,1);
+cv_adfm_1=s_adfm[int(0.01*nr)];
+cv_adfm_5=s_adfm[int(0.05*nr)];
+cv_adfm_10=s_adfm[int(0.10*nr)];
+cv_adfm_50=s_adfm[int(0.50*nr)];
+cv_adfm_90=s_adfm[int(0.90*nr)];
+cv_adfm_95=s_adfm[int(0.95*nr)];
+cv_adfm_99=s_adfm[int(0.99*nr)];
+
+"cv_ardlm_1=" cv_adfm_1;
+"cv_ardlm_5=" cv_adfm_5;
+"cv_ardlm_10=" cv_adfm_10;
+"cv_ardlm_50=" cv_adfm_50;
+"cv_ardlm_90=" cv_adfm_90;
+"cv_ardlm_95=" cv_adfm_95;
+"cv_ardlm_99=" cv_adfm_99;
+
+mout1[5,1]=cv_adfm_1;
+mout1[5,2]=cv_adfm_5;
+mout1[5,3]=cv_adfm_10;
+mout1[5,4]=cv_adfm_50;
+mout1[5,5]=cv_adfm_90;
+mout1[5,6]=cv_adfm_95;
+mout1[5,7]=cv_adfm_99;
+
+"mout1=" mout1;
+
+nn1=nn1+1;
+endo;
+
+rr=rr+1;
+endo;
+
+@ =====End of calculation================================================	@

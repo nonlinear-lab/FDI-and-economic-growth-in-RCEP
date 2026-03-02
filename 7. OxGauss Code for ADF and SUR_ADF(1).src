@@ -1,0 +1,274 @@
+@ =========================================================   	@
+@ Gauss program for ADF_SURADF_FADF_SURFADF     	       	@ 
+@ =========================================================   	@
+@ Input:      		y: Tx1 vector of time series        	@
+@ Output:    		ADF, SURADF, FADF and SURFADF statistics@
+@ Subprogram: 		none					@
+@ Lag length:		1					@
+@ =========================================================	@
+
+closeall;
+
+output file=adf_suradf_fadf_surfadf_out(c).txt reset;
+
+@ =====data input================================================	@
+load data[45,10]=data1.txt;
+
+rr=rows(data);
+cc=cols(data);
+
+tnc=5;
+@ tnc is total number of countries @
+
+np=1;
+do while np<=2;
+
+if np==1;
+"+++++++++++++++FDI";
+endif;
+if np==2;
+"+++++++++++++++GDP";
+endif;
+
+nc=1;
+do while nc<=tnc;
+
+LL=1;
+
+@ =====ADF estimation ============================================ @
+y=data[1:rr,(np-1)*5+nc];
+n=rows(y);
+dy=y[2:n]-y[1:n-1];
+const=ones(n,1);
+trend=seqa(1,1,n);
+x=const[LL+2:n]~trend[LL+2:n]~y[LL+1:n-1]~dy[LL:n-2];
+y=dy[LL+1:n-1];
+invx=inv(x'x);
+beta=invx*x'y;
+e=y-x*beta;
+rss=(e'e)/(rows(y)-cols(x));
+sd=sqrt(diag(rss*invx));
+t=beta./sd;
+adf=t[3,1];
+
+"adf=" adf;
+
+nc=nc+1;
+endo;
+
+@ =====SURADF : data preparation ================================================	@
+
+rrr=rows(y);
+@ 2 observation is lost@
+tnv=4;
+@ tnv is total number of variable in model @
+
+rrr=rows(y);
+yy=zeros(tnc*rrr, 1);
+xx=zeros(tnc*rrr,tnc*tnv);
+
+nc=1;
+do while nc<=tnc;
+
+y=data[1:rr,(np-1)*5+nc];
+n=rows(y);
+dy=y[2:n]-y[1:n-1];
+const=ones(n,1);
+trend=seqa(1,1,n);
+x=const[LL+2:n]~trend[LL+2:n]~y[LL+1:n-1]~dy[LL:n-2];
+y=dy[LL+1:n-1];
+
+LL=1;
+j=1;
+do while j<=rrr;
+
+yy[j+rrr*(nc-1)]=y[j];
+xx[j+rrr*(nc-1),1+tnv*(nc-1)]=x[j,1];
+xx[j+rrr*(nc-1),2+tnv*(nc-1)]=x[j,2];
+xx[j+rrr*(nc-1),3+tnv*(nc-1)]=x[j,3];
+xx[j+rrr*(nc-1),4+tnv*(nc-1)]=x[j,4];
+
+j=j+1;
+endo;
+
+nc=nc+1;
+endo;
+
+@ =====ADF : calculation ================================================	@
+eee5=zeros(rrr,tnc);
+eee3=zeros(rrr*tnc,1);
+eee3_1=zeros(rrr,1);
+eee3_2=zeros(rrr,1);
+eee3_3=zeros(rrr,1);
+eee3_4=zeros(rrr,1);
+eee3_5=zeros(rrr,1);
+beta3_1=zeros(tnv,1);
+beta3_2=zeros(tnv,1);
+beta3_3=zeros(tnv,1);
+beta3_4=zeros(tnv,1);
+beta3_5=zeros(tnv,1);
+sd3_1=zeros(tnv,1);
+sd3_2=zeros(tnv,1);
+sd3_3=zeros(tnv,1);
+sd3_4=zeros(tnv,1);
+sd3_5=zeros(tnv,1);
+
+invxx=inv(xx'xx);
+beta3=invxx*xx'yy;
+eee3=yy-xx*beta3;
+
+beta3_1[1:tnv]=beta3[1:tnv];
+beta3_2[1:tnv]=beta3[tnv+1:tnv*2];
+beta3_3[1:tnv]=beta3[tnv*2+1:tnv*3];
+beta3_4[1:tnv]=beta3[tnv*3+1:tnv*4];
+beta3_5[1:tnv]=beta3[tnv*4+1:tnv*5];
+
+eee3_1[1:rrr]=eee3[1:rrr];
+eee3_2[1:rrr]=eee3[rrr+1:rrr*2];
+eee3_3[1:rrr]=eee3[rrr*2+1:rrr*3];
+eee3_4[1:rrr]=eee3[rrr*3+1:rrr*4];
+eee3_5[1:rrr]=eee3[rrr*4+1:rrr*5];
+
+rss3_1=(eee3_1'eee3_1)/(rrr-tnv);
+sd3_1a=sqrt(diag(rss3_1*invxx));
+sd3_1[1:tnv]=sd3_1a[1:tnv];
+t3_1=beta3_1./sd3_1;
+adf3_1=t3_1[3,1];
+"adf3_1=" adf3_1;
+
+rss3_2=(eee3_2'eee3_2)/(rrr-tnv);
+sd3_2a=sqrt(diag(rss3_2*invxx));
+sd3_2[1:tnv]=sd3_2a[tnv+1:tnv*2];
+t3_2=beta3_2./sd3_2;
+adf3_2=t3_2[3,1];
+"adf3_2=" adf3_2;
+
+rss3_3=(eee3_3'eee3_3)/(rrr-tnv);
+sd3_3a=sqrt(diag(rss3_3*invxx));
+sd3_3[1:tnv]=sd3_3a[tnv*2+1:tnv*3];
+t3_3=beta3_3./sd3_3;
+adf3_3=t3_3[3,1];
+"adf3_3=" adf3_3;
+
+rss3_4=(eee3_4'eee3_4)/(rrr-tnv);
+sd3_4a=sqrt(diag(rss3_4*invxx));
+sd3_4[1:tnv]=sd3_4a[tnv*3+1:tnv*4];
+t3_4=beta3_4./sd3_4;
+adf3_4=t3_4[3,1];
+"adf3_4=" adf3_4;
+
+rss3_5=(eee3_5'eee3_5)/(rrr-tnv);
+sd3_5a=sqrt(diag(rss3_5*invxx));
+sd3_5[1:tnv]=sd3_5a[tnv*4+1:tnv*5];
+t3_5=beta3_5./sd3_5;
+adf3_5=t3_5[3,1];
+"adf3_5=" adf3_5;
+
+@ =====SURADF : calculation ================================================	@
+
+eee=zeros(rrr*tnc, 1);
+eee2=zeros(rrr, tnc);
+eee6_1=zeros(rrr,1);
+eee6_2=zeros(rrr,1);
+eee6_3=zeros(rrr,1);
+eee6_4=zeros(rrr,1);
+eee6_5=zeros(rrr,1);
+beta6_1=zeros(tnv,1);
+beta6_2=zeros(tnv,1);
+beta6_3=zeros(tnv,1);
+beta6_4=zeros(tnv,1);
+beta6_5=zeros(tnv,1);
+sd6_1=zeros(tnv,1);
+sd6_2=zeros(tnv,1);
+sd6_3=zeros(tnv,1);
+sd6_4=zeros(tnv,1);
+sd6_5=zeros(tnv,1);
+
+invxx=inv(xx'xx);
+beta3=invxx*xx'yy;
+eee=yy-xx*beta3;  				  
+
+eee2[1:rrr,1]=eee[1:rrr];
+eee2[1:rrr,2]=eee[rrr+1:rrr*2];
+eee2[1:rrr,3]=eee[rrr*2+1:rrr*3];
+eee2[1:rrr,4]=eee[rrr*3+1:rrr*4];
+eee2[1:rrr,5]=eee[rrr*4+1:rrr*5];
+
+/* The residual covariance matrix could be estimated by the sum-of-square cross-product (SSCP) dividing
+by number of observation with degree of freedom correction. SSCP/(n-k)
+The degree of freedom adjustment is conditioning variable, including mean adjustment terms.
+In this case, numner of mean adjustment is 2 (nn-2=nnn) */
+
+/*
+mcorr= average values of cross-equation residual correlation (CRC) 
+*/
+crc=corrx(eee2);
+"cross-equation residual correlation=" crc; 
+
+rss5=eee2'eee2/(rrr);
+ccc=rss5.*.eye(rrr);
+ccc=inv(ccc);
+beta6=inv(xx'xx)*(xx'yy);
+@beta6=inv(xx'ccc*xx)*(xx'ccc*yy);
+beta6=(xx'ccc*xx)/(xx'ccc*yy);	 
+beta6=solvels(xx'ccc*yy, xx'ccc*xx);
+beta6=(xx'*ccc_inv*xx)\(xx'*ccc_inv*yy); @
+eee6=yy-xx*beta6;
+@invxxc=inv(xx'ccc*xx);	 @
+invxxc=inv(xx'xx);
+
+beta6_1[1:tnv]=beta6[1:tnv];
+beta6_2[1:tnv]=beta6[tnv+1:tnv*2];
+beta6_3[1:tnv]=beta6[tnv*2+1:tnv*3];
+beta6_4[1:tnv]=beta6[tnv*3+1:tnv*4];
+beta6_5[1:tnv]=beta6[tnv*4+1:tnv*5];
+
+eee6_1[1:rrr]=eee6[1:rrr];
+eee6_2[1:rrr]=eee6[rrr+1:rrr*2];
+eee6_3[1:rrr]=eee6[rrr*2+1:rrr*3];
+eee6_4[1:rrr]=eee6[rrr*3+1:rrr*4];
+eee6_5[1:rrr]=eee6[rrr*4+1:rrr*5];
+
+rss6_1=(eee6_1'eee6_1)/(rrr-tnv);
+sd6_1a=sqrt(diag(rss6_1*invxxc));
+@sd6_1a=sqrt(diag(invxxc));@
+sd6_1[1:tnv]=sd6_1a[1:tnv];
+t6_1=beta6_1./sd6_1;
+suradf6_1=t6_1[3,1];
+"suradf6_1=" suradf6_1;
+
+rss6_2=(eee6_2'eee6_2)/(rrr-tnv);
+sd6_2a=sqrt(diag(rss6_2*invxxc));
+@sd6_2a=sqrt(diag(invxxc));@
+sd6_2[1:tnv]=sd6_2a[tnv+1:tnv*2];
+t6_2=beta6_2./sd6_2;
+suradf6_2=t6_2[3,1];
+"suradf6_2=" suradf6_2;
+
+rss6_3=(eee6_3'eee6_3)/(rrr-tnv);
+sd6_3a=sqrt(diag(rss6_3*invxxc));
+@sd6_3a=sqrt(diag(invxxc));@
+sd6_3[1:tnv]=sd6_3a[tnv*2+1:tnv*3];
+t6_3=beta6_3./sd6_3;
+suradf6_3=t6_3[3,1];
+"suradf6_3=" suradf6_3;
+
+rss6_4=(eee6_4'eee6_4)/(rrr-tnv);
+sd6_4a=sqrt(diag(rss6_4*invxxc));
+@sd6_4a=sqrt(diag(invxxc));@
+sd6_4[1:tnv]=sd6_4a[tnv*3+1:tnv*4];
+t6_4=beta6_4./sd6_4;
+suradf6_4=t6_4[3,1];
+"suradf6_4=" suradf6_4;
+
+rss6_5=(eee6_5'eee6_5)/(rrr-tnv);
+sd6_5a=sqrt(diag(rss6_5*invxxc));
+@sd6_5a=sqrt(diag(invxxc));	@
+sd6_5[1:tnv]=sd6_5a[tnv+4+1:tnv*5];
+t6_5=beta6_5./sd6_5;
+suradf6_5=t6_5[3,1];
+"suradf6_5=" suradf6_5;
+
+np=np+1;
+endo;
+@ =====end of calculation================================================	@
